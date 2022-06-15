@@ -7,6 +7,8 @@ Created on Fri Jun 10 17:01:18 2022
 Mean free path approach taken from https://www.researchgate.net/publication/318413306_Monte_Carlo_studies_on_neutron_interactions_in_radiobiological_experiments
 
 """
+
+import os
 import numpy as np
 import pandas as pd
 import random as rand
@@ -21,7 +23,7 @@ E_init = 1.641063e+06
 MCS = 2.108162e-24
 sigma_O = 2.108162e-24
 sigma_H = 3.186791e-24
-E_min = 0.4*E_init
+E_min = 0.1*E_init
 
 WIDTH = 10
 LENGTH = 10
@@ -44,13 +46,19 @@ class Element:
        
 
 #cd Desktop\NeutronModeration
+
+path = "Desktop/NeutronModeration"
+os.chdir(path)
+
 Hydrogen = Element(1.00794, pd.read_csv("H-n.csv"))
 Oxygen =  Element(15.9994, pd.read_csv("O-n.csv"))
 
 
 #uniformly distributed post-collision angle of the neutron 
-def random_angle():
-    return(rand.uniform(-1,1)*np.pi)
+def random_angle(E):
+    angle =np.random.choice([-1,1])* np.arccos(np.sqrt(np.abs(E)/E_init)) 
+    
+    return(angle + np.random.normal(loc = angle, scale = 0.1))
 #average path lenght between collisions
 def mean_free_path(MCS):
     return(- 1/MCS*np.log(rand.random()))
@@ -76,10 +84,10 @@ def inbox_condition(x,y,E):
 
 #Data Frame to which we will pass generation number, x coordinate, y coordinate, particle's energy
 data = pd.DataFrame(columns = ["#", "x", "y", "E"])
- 
+
 #%%
 #progress bar
-iteration_number = 20000
+iteration_number = 10000
 import progressbar
 bar = progressbar.ProgressBar(maxval=iteration_number, \
     widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
@@ -90,18 +98,19 @@ for i in range(iteration_number):
     x = X_init
     y = Y_init
     E = initial_distribution()
+    Theta = 0
     bar.update(i)
     #data.loc[len(data.index)] = [i,x,y,E]
     while inbox_condition(x,y,E):
         data.loc[len(data.index)] = [i,x,y,E]
-        Theta = random_angle()
         Lambda = mean_free_path(macroscopic_cross_section(Hydrogen.cross_section(E), Oxygen.cross_section(E)))
         
-        x_n = x + Lambda*np.cos(Theta)
-        y_n = y + Lambda*np.sin(Theta)
-        E_n = energy(E,Theta,random_target(E))
+        Theta_n = random_angle(E) + Theta
+        x_n = x + Lambda*np.cos(Theta_n)
+        y_n = y + Lambda*np.sin(Theta_n)
+        E_n = energy(E,Theta_n,random_target(E))
         
-        
+        Theta = Theta_n
         x = x_n
         y = y_n
         E = E_n
@@ -114,18 +123,19 @@ for i in range(10):
     plt.xlim((0,LENGTH))        
 
 #%%
-#histogram that traces number of times neutron appeared in the bin
-counts, yedges, xedges = np.histogram2d(np.array(data.y),np.array(data.x), bins=[40,40])
-#total energy tracing
-Total_energy, _ ,_ = np.histogram2d(np.array(data.y),np.array(data.x),weights=np.array(data.E), bins=[40,40])
-#mean energy per bin
-#nan_to_num replaces invalid values coming from E/0
-plt.figure(figsize=(10,8))
-plt.pcolormesh(xedges,yedges, np.nan_to_num(Total_energy/counts, nan=0.0, posinf=0.0, neginf=0.0), cmap='coolwarm')
-plt.colorbar().set_label('Average energy', rotation=270,labelpad=10)
-plt.xlim(0,LENGTH)
-plt.ylim(0,WIDTH)
+properties = ['Width','Length','Iterations']
+data.loc[0,properties] = [WIDTH, LENGTH, iteration_number]
+data[properties] = data[properties].fillna('')
+
+from os import path
+data.to_csv(path.join("C:/Users/Jan Chojnacki/Desktop/NeutronModeration/",'raw_data_new.csv'), index=False) 
 #%%
-        
-        
-        
+# mean free path as a function of energy
+
+energy_vector = np.arange(4e5,1e7, 1000)
+mean_free_path_df = pd.DataFrame({"Energy":energy_vector, "Mean free path": 1/macroscopic_cross_section(np.vectorize(Hydrogen.cross_section)(energy_vector), np.vectorize(Oxygen.cross_section)(energy_vector)) })
+mean_free_path_df.to_csv(path.join("C:/Users/Jan Chojnacki/Desktop/NeutronModeration/",'mean_free_path.csv'), index=False) 
+#plt.plot(energy_vector, 1/macroscopic_cross_section(np.vectorize(Hydrogen.cross_section)(energy_vector), np.vectorize(Oxygen.cross_section)(energy_vector)))        
+#%%
+angle_data = [random_angle(E_init) for i in range(1000)]
+plt.hist(angle_data)
