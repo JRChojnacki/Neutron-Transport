@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 path = "Desktop/NeutronModeration"
 os.chdir(path)
 
-data = pd.read_csv("raw_data_new.csv")
+data = pd.read_csv("raw_data3.csv")
 properties = ['Width','Length','Iterations']
 data[properties] = data[properties].fillna('')
 LENGTH = data.loc[0].Length

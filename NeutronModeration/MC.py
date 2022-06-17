@@ -87,7 +87,7 @@ data = pd.DataFrame(columns = ["#", "x", "y", "E"])
 
 #%%
 #progress bar
-iteration_number = 10000
+iteration_number = 50000
 import progressbar
 bar = progressbar.ProgressBar(maxval=iteration_number, \
     widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
@@ -98,7 +98,7 @@ for i in range(iteration_number):
     x = X_init
     y = Y_init
     E = initial_distribution()
-    Theta = 0
+    Theta = np.random.uniform(-np.pi/2,np.pi/2)
     bar.update(i)
     #data.loc[len(data.index)] = [i,x,y,E]
     while inbox_condition(x,y,E):
@@ -128,7 +128,7 @@ data.loc[0,properties] = [WIDTH, LENGTH, iteration_number]
 data[properties] = data[properties].fillna('')
 
 from os import path
-data.to_csv(path.join("C:/Users/Jan Chojnacki/Desktop/NeutronModeration/",'raw_data_new.csv'), index=False) 
+data.to_csv(path.join("C:/Users/Jan Chojnacki/Desktop/NeutronModeration/",'raw_data3.csv'), index=False) 
 #%%
 # mean free path as a function of energy
 
